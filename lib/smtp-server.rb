@@ -21,9 +21,9 @@ module SmtpServer
     public
 
     def start
-      @logger.info("SMTP Server started on ports: #{@servers.map(&:addr).map { |addr| addr[1] }.join(', ')}")
+      @logger.info("SMTP Server starting on ports: #{ ports.join(', ') }")
       loop do
-        @servers.each do |server|
+        @servers.each do | server |
           if @connections.size < 4
             client = server.accept_nonblock(exception: false)
             if client
@@ -44,7 +44,7 @@ module SmtpServer
     private
 
     def handle_client(client)
-      @logger.info("Client connected: #{client.peeraddr[2]}")
+      @logger.info("Client connected: #{client} - #{client.peeraddr[2]}")
       client.puts "220 Welcome to the SMTP server"
       loop do
         request = client.gets
