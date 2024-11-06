@@ -32,10 +32,10 @@ module SmtpServer
               fiber.resume
             end
           else
-            @connections.each do |fiber|
+            @connections.each do | fiber |
               fiber.resume if fiber.alive?
             end
-            @connections.reject! { |fiber| !fiber.alive? }
+            @connections.reject! { | fiber | !fiber.alive? }
           end
         end
       end
@@ -44,6 +44,7 @@ module SmtpServer
     private
 
     def handle_client(client)
+      @logger.info("Client connected: #{client} ")
       @logger.info("Client connected: #{client} - #{client.peeraddr[2]}")
       client.puts "220 Welcome to the SMTP server"
       loop do
