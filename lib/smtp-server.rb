@@ -11,10 +11,11 @@ module SmtpServer
   # class for SmtpServer
   class Smtpd
 
-    def initialize(ports = [2525])
-      @servers = ports.map { |port| TCPServer.new(port) }
+    def initialize(ports: [2525])
+      @ports       = ports
+      @servers     = @ports.map { | port | TCPServer.new(port) }
       @connections = []
-      @logger = Logger.new(STDOUT)
+      @logger      = Logger.new(STDOUT)
     end
 
     public
