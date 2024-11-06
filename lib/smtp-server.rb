@@ -8,35 +8,30 @@ require 'net/smtp'
 # A small and highly customizable ruby SMTP-Server.
 module SmtpServer
 
-  # class for SmtpServer
-  class Smtpd
+  class Server
 
-    def initialize(ports: [2525])
-      @ports       = ports
-      @servers     = @ports.map { | port | TCPServer.new(port) }
+    def initialize(port: 2525)
+      @port = port
       @connections = []
-      @logger      = Logger.new(STDOUT)
+      @logger = Logger.new(STDOUT)
+      @server = TCPServer.new(port)
     end
 
-    public
-
     def start
-      @logger.info("SMTP Server starting on ports: #{ @ports.join(', ') }")
+      @logger.info("SMTP Server starting on port: #{ @port }")
       loop do
-        @servers.each do | server |
-          if @connections.size < 4
-            client = server.accept_nonblock(exception: false)
-            if client
-              fiber = Fiber.new { handle_client(client) }
-              @connections << fiber
-              fiber.resume
-            end
-          else
-            @connections.each do | fiber |
-              fiber.resume if fiber.alive?
-            end
-            @connections.reject! { | fiber | !fiber.alive? }
+        if @connections.size < 4
+          client = @server.accept_nonblock(exception: false)
+          if client
+            fiber = Fiber.new { handle_client(client) }
+            @connections << fiber
+            fiber.resume
           end
+        else
+          @connections.each do | fiber |
+            fiber.resume if fiber.alive?
+          end
+          @connections.reject! { | fiber | !fiber.alive? }
         end
       end
     end
@@ -55,6 +50,42 @@ module SmtpServer
       end
       client.close
       @logger.info("Client disconnected")
+    end
+
+  end
+
+  # class for SmtpServer
+  class Smtpd
+
+    def initialize(ports: [2525])
+      @ports = ports
+      @servers = []
+      @logger = Logger.new(STDOUT)
+    end
+
+    def start
+      @ports.each do |port|
+        server = Server.new(port: port)
+        @servers << server
+        Thread.new { server.start }
+      end
+
+      @logger.info("SMTP Servers started on ports: #{ @ports.join(', ') }")
+
+      loop do
+        @servers.each do |server|
+          unless server_running?(server)
+            @logger.error("Server on port #{server.instance_variable_get(:@port)} has stopped.")
+          end
+        end
+        sleep 5
+      end
+    end
+
+    private
+
+    def server_running?(server)
+      !server.instance_variable_get(:@server).closed?
     end
 
   end
