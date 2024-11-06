@@ -62,7 +62,8 @@ module SmtpServer
       @ports.each do | port |
         server = Server.new(port: port)
         @servers << server
-        Thread.new { server.start }
+        server.start
+
       end
 
       loop do
