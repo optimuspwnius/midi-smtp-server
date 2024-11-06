@@ -2,8 +2,7 @@ require 'logger'
 require 'socket'
 require 'resolv'
 require 'base64'
-require 'async'
-require 'async/io'
+require 'fiber'
 require 'net/smtp'
 
 # A small and highly customizable ruby SMTP-Server.
@@ -13,22 +12,26 @@ module SmtpServer
 
     def initialize(port: 2525)
       @port = port
+      @connections = []
       @logger = Logger.new(STDOUT)
+      @server = TCPServer.new(port)
     end
 
     def start
       @logger.info("SMTP Server starting on port: #{ @port }")
-
-      Async do |task|
-        endpoint = Async::IO::Endpoint.tcp('0.0.0.0', @port)
-        endpoint.bind do |server|
-          @logger.info("Listening on port #{ @port }")
-          loop do
-            client = server.accept
-            task.async do
-              handle_client(client)
-            end
+      loop do
+        if @connections.size < 4
+          client = @server.accept
+          if client
+            fiber = Fiber.new { handle_client(client) }
+            @connections << fiber
+            fiber.resume
           end
+        else
+          @connections.each do | fiber |
+            fiber.resume if fiber.alive?
+          end
+          @connections.reject! { | fiber | !fiber.alive? }
         end
       end
     end
@@ -36,14 +39,14 @@ module SmtpServer
     private
 
     def handle_client(client)
-      @logger.info("Client connected: #{client.remote_address.ip_address}")
-      client.write "220 Welcome to the SMTP server\r\n"
+      @logger.info("Client connected: #{client.peeraddr[2]}")
+      client.puts "220 Welcome to the SMTP server"
       loop do
-        request = client.readpartial(1024)
+        request = client.gets
         break if request.nil?
         @logger.info("Received request: #{request.chomp}")
 
-        client.write "250 OK\r\n"
+        client.puts "250 OK"
       end
       client.close
       @logger.info("Client disconnected")
@@ -51,6 +54,7 @@ module SmtpServer
 
   end
 
+  # class for SmtpServer
   class Smtpd
 
     def initialize(ports: [2525])
@@ -60,16 +64,17 @@ module SmtpServer
     end
 
     def start
+
+      @logger.info("SMTP Servers started on ports: #{ @ports.join(', ') }")
+
       @ports.each do |port|
         server = Server.new(port: port)
         @servers << server
         Thread.new { server.start }
       end
 
-      @logger.info("SMTP Servers started on ports: #{ @ports.join(', ') }")
-
       loop do
-        @servers.each do |server|
+        @servers.each do | server |
           unless server_running?(server)
             @logger.error("Server on port #{server.instance_variable_get(:@port)} has stopped.")
           end
@@ -81,8 +86,7 @@ module SmtpServer
     private
 
     def server_running?(server)
-      # This method should be updated to check the status of the async server
-      true
+      !server.instance_variable_get(:@server).closed?
     end
 
   end
