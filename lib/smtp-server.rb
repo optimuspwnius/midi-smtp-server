@@ -3,7 +3,6 @@ require 'socket'
 require 'resolv'
 require 'base64'
 require 'async'
-require 'async/io'
 require 'net/smtp'
 
 # A small and highly customizable ruby SMTP-Server.
