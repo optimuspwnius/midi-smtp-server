@@ -21,13 +21,11 @@ module SmtpServer
 
       Async do |task|
         endpoint = Async::IO::Endpoint.tcp('0.0.0.0', @port)
-        endpoint.bind do |server|
-          @logger.info("Listening on port #{ @port }")
-          loop do
-            client = server.accept
-            task.async do
-              handle_client(client)
-            end
+        @logger.info("Listening on port #{ @port }")
+        loop do
+          client = endpoint.accept
+          task.async do
+            handle_client(client)
           end
         end
       end
