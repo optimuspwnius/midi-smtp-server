@@ -21,8 +21,7 @@ module SmtpServer
       @endpoint = Async::IO::Endpoint.tcp('127.0.0.1', @port)
       @logger.info("Listening on port #{ @port }")
       Async do | task |
-        client = @endpoint.accept
-        task.async do
+        @endpoint.accept do | client |
           handle_client(client)
         end
       end
@@ -55,7 +54,7 @@ module SmtpServer
     end
 
     def start
-      @logger.info("SMTP Servers started on ports: #{ @ports.join(', ') }")
+      @logger.info("SMTP Servers starting on ports: #{ @ports.join(', ') }")
       @ports.each do | port |
         server = Server.new(port: port)
         @servers << server
