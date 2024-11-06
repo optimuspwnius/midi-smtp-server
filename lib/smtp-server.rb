@@ -3,6 +3,7 @@ require 'socket'
 require 'resolv'
 require 'base64'
 require 'fiber'
+require 'net/smtp'
 
 # A small and highly customizable ruby SMTP-Server.
 module SmtpServer
