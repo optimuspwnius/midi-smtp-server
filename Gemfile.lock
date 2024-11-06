@@ -10,6 +10,8 @@ GEM
       console (~> 1.26)
       fiber-annotation
       io-event (~> 1.6, >= 1.6.5)
+    async-io (1.43.2)
+      async
     console (1.29.0)
       fiber-annotation
       fiber-local (~> 1.1)
@@ -27,6 +29,7 @@ PLATFORMS
 
 DEPENDENCIES
   async
+  async-io
   smtp-server!
 
 BUNDLED WITH
