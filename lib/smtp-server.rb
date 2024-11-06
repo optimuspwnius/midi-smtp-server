@@ -449,9 +449,9 @@ module SmtpServer
     # event on LOGGING
     # the exposed logger property is from class SmtpServer::ForwardingLogger
     # and pushes any logging message to this on_logging_event.
-    # if logging occurs from inside session, the _ctx should be not nil
+    # if logging occurs from inside session, the context should be not nil
     # if logging occurs from an error, the err object should be filled
-    def on_logging_event(_ctx, severity, msg, err: nil)
+    def on_logging_event(context, severity, msg, err: nil)
       case severity
         when Logger::INFO
           @logger_protected.info(msg)
@@ -468,79 +468,79 @@ module SmtpServer
     end
 
     # event on CONNECTION
-    # you may change the ctx[:server][:local_response] and
-    # you may change the ctx[:server][:helo_response] in here so
+    # you may change the context[:server][:local_response] and
+    # you may change the context[:server][:helo_response] in here so
     # that these will be used as local welcome and greeting strings
     # the values are not allowed to return CR nor LF chars and will be stripped
-    def on_connect_event(ctx)
-      on_logging_event(ctx, Logger::DEBUG, "Client connect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} to #{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}")
+    def on_connect_event(context)
+      on_logging_event(context, Logger::DEBUG, "Client connect from #{context[:server][:remote_ip]}:#{context[:server][:remote_port]} to #{context[:server][:local_ip]}:#{context[:server][:local_port]}")
     end
 
     # event before DISCONNECT
-    def on_disconnect_event(ctx)
-      on_logging_event(ctx, Logger::DEBUG, "Client disconnect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} on #{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}")
+    def on_disconnect_event(context)
+      on_logging_event(context, Logger::DEBUG, "Client disconnect from #{context[:server][:remote_ip]}:#{context[:server][:remote_port]} on #{context[:server][:local_ip]}:#{context[:server][:local_port]}")
     end
 
     # event on HELO/EHLO
-    # you may change the ctx[:server][:helo_response] in here so
+    # you may change the context[:server][:helo_response] in here so
     # that this will be used as greeting string
     # the value is not allowed to return CR nor LF chars and will be stripped
-    def on_helo_event(ctx, helo_data) end
+    def on_helo_event(context, helo_data) end
 
     # event on PROXY
     # you may raise an exception if you want to block some addresses
     # you also may change or add any value of the hash:
     # {proto, source_ip, source_host, source_port, dest_ip, dest_host, dest_port}
-    # a returned value hash is set as ctx[:server][:proxy]
-    def on_proxy_event(ctx, proxy_data) end
+    # a returned value hash is set as context[:server][:proxy]
+    def on_proxy_event(context, proxy_data) end
 
     # check the authentication on AUTH
     # if any value returned, that will be used for ongoing processing
     # otherwise the original value will be used for authorization_id
-    def on_auth_event(ctx, authorization_id, authentication_id, authentication)
+    def on_auth_event(context, authorization_id, authentication_id, authentication)
       # if authentication is used, override this event
       # and implement your own user management.
       # otherwise all authentications are blocked per default
-      on_logging_event(ctx, Logger::DEBUG, "Deny access from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} for #{authentication_id}" + (authorization_id == '' ? '' : "/#{authorization_id}") + " with #{authentication}")
+      on_logging_event(context, Logger::DEBUG, "Deny access from #{context[:server][:remote_ip]}:#{context[:server][:remote_port]} for #{authentication_id}" + (authorization_id == '' ? '' : "/#{authorization_id}") + " with #{authentication}")
       raise Smtpd535Exception
     end
 
     # check the status of authentication for a given context
-    def authenticated?(ctx)
-      ctx[:server][:authenticated] && !ctx[:server][:authenticated].to_s.empty?
+    def authenticated?(context)
+      context[:server][:authenticated] && !context[:server][:authenticated].to_s.empty?
     end
 
     # check the status of encryption for a given context
-    def encrypted?(ctx)
-      ctx[:server][:encrypted] && !ctx[:server][:encrypted].to_s.empty?
+    def encrypted?(context)
+      context[:server][:encrypted] && !context[:server][:encrypted].to_s.empty?
     end
 
     # get address send in MAIL FROM
     # if any value returned, that will be used for ongoing processing
     # otherwise the original value will be used
-    def on_mail_from_event(ctx, mail_from_data) end
+    def on_mail_from_event(context, mail_from_data) end
 
     # get each address send in RCPT TO
     # if any value returned, that will be used for ongoing processing
     # otherwise the original value will be used
-    def on_rcpt_to_event(ctx, rcpt_to_data) end
+    def on_rcpt_to_event(context, rcpt_to_data) end
 
     # event when beginning with message DATA
-    def on_message_data_start_event(ctx) end
+    def on_message_data_start_event(context) end
 
     # event while receiving message DATA
-    def on_message_data_receiving_event(ctx) end
+    def on_message_data_receiving_event(context) end
 
     # event when headers are received while receiving message DATA
-    def on_message_data_headers_event(ctx) end
+    def on_message_data_headers_event(context) end
 
     # get each message after DATA <message>
-    def on_message_data_event(ctx) end
+    def on_message_data_event(context) end
 
     # event when process_line identifies an unknown command line
     # allows to abort sessions for a series of unknown activities to
     # prevent denial of service attacks etc.
-    def on_process_line_unknown_event(_ctx, _line)
+    def on_process_line_unknown_event(context, line)
       # per default we encounter an error
       raise Smtpd500Exception
     end
@@ -694,19 +694,19 @@ module SmtpServer
           process_reset_session(session, connection_initialize: true)
 
           # get local address info
-          _, session[:ctx][:server][:local_port], session[:ctx][:server][:local_host], session[:ctx][:server][:local_ip] = @do_dns_reverse_lookup ? io.addr(:hostname) : io.addr(:numeric)
+          _, session[:context][:server][:local_port], session[:context][:server][:local_host], session[:context][:server][:local_ip] = @do_dns_reverse_lookup ? io.addr(:hostname) : io.addr(:numeric)
           # get remote partner hostname and address
-          _, session[:ctx][:server][:remote_port], session[:ctx][:server][:remote_host], session[:ctx][:server][:remote_ip] = @do_dns_reverse_lookup ? io.peeraddr(:hostname) : io.peeraddr(:numeric)
+          _, session[:context][:server][:remote_port], session[:context][:server][:remote_host], session[:context][:server][:remote_ip] = @do_dns_reverse_lookup ? io.peeraddr(:hostname) : io.peeraddr(:numeric)
 
           # save connection date/time
-          session[:ctx][:server][:connected] = Time.now.utc
+          session[:context][:server][:connected] = Time.now.utc
 
           # build and save the local welcome and greeting response strings
-          session[:ctx][:server][:local_response] = "#{session[:ctx][:server][:local_host]} says welcome!"
-          session[:ctx][:server][:helo_response] = "#{session[:ctx][:server][:local_host]} at your service!"
+          session[:context][:server][:local_response] = "#{session[:context][:server][:local_host]} says welcome!"
+          session[:context][:server][:helo_response] = "#{session[:context][:server][:local_host]} at your service!"
 
           # check if we want to let this remote station connect us
-          on_connect_event(session[:ctx])
+          on_connect_event(session[:context])
 
           # drop connection (respond 421) if too busy
           raise Smtpd421Exception, 'Abort connection while too busy, exceeding max_connections!' if !max_connections.nil? && connections > max_connections
@@ -721,10 +721,10 @@ module SmtpServer
           @processings << Thread.current
 
           # reply local welcome message
-          output = +"220 #{session[:ctx][:server][:local_response].to_s.strip}\r\n"
+          output = +"220 #{session[:context][:server][:local_response].to_s.strip}\r\n"
 
           # log and show to client
-          on_logging_event(session[:ctx], Logger::DEBUG, +'>>> ' << output)
+          on_logging_event(session[:context], Logger::DEBUG, +'>>> ' << output)
           io.print output unless io.closed?
 
           # initialize \r\n for line_break, this is used for CRLF_ENSURE and CRLF_STRICT and mark as mutable
@@ -746,7 +746,7 @@ module SmtpServer
               # start ssl tunnel
               io = @tls.start(io)
               # save enabled tls
-              session[:ctx][:server][:encrypted] = Time.now.utc
+              session[:context][:server][:encrypted] = Time.now.utc
               # set sequence back to HELO/EHLO
               session[:cmd_sequence] = :CMD_HELO
               # reset timeout timestamp
@@ -792,17 +792,17 @@ module SmtpServer
                     # remove any \r or \n occurrence from line
                     line.delete!("\r\n")
                     # log line, verbosity based on log severity and command sequence
-                    on_logging_event(session[:ctx], Logger::DEBUG, +'<<< ' << line << "\n") if session[:cmd_sequence] != :CMD_DATA
+                    on_logging_event(session[:context], Logger::DEBUG, +'<<< ' << line << "\n") if session[:cmd_sequence] != :CMD_DATA
 
                   when :CRLF_LEAVE
                     # use input line_break for line_break
                     line_break = line[-2..] == "\r\n" ? "\r\n" : "\n"
                     # check to override session crlf info, only when CRLF_LEAVE is used and in DATA mode
-                    session[:ctx][:message][:crlf] = line_break if session[:cmd_sequence] == :CMD_DATA
+                    session[:context][:message][:crlf] = line_break if session[:cmd_sequence] == :CMD_DATA
                     # remove any line_break from line
                     line.chomp!
                     # log line, verbosity based on log severity and command sequence
-                    on_logging_event(session[:ctx], Logger::DEBUG, +'<<< ' << line.gsub("\r", '[\r]') << "\n") if session[:cmd_sequence] != :CMD_DATA
+                    on_logging_event(session[:context], Logger::DEBUG, +'<<< ' << line.gsub("\r", '[\r]') << "\n") if session[:cmd_sequence] != :CMD_DATA
 
                   when :CRLF_STRICT
                     # check line ends up by \r\n
@@ -812,7 +812,7 @@ module SmtpServer
                     # check line for additional \r
                     raise Smtpd500Exception, 'Line contains additional CR chars!' if line.index("\r")
                     # log line, verbosity based on log severity and command sequence
-                    on_logging_event(session[:ctx], Logger::DEBUG, +'<<< ' << line << "\n") if session[:cmd_sequence] != :CMD_DATA
+                    on_logging_event(session[:context], Logger::DEBUG, +'<<< ' << line << "\n") if session[:cmd_sequence] != :CMD_DATA
                 end
 
                 # process line and mark output as mutable
@@ -826,22 +826,22 @@ module SmtpServer
               # defined SmtpdException
               rescue SmtpdException => e
                 # inc number of detected exceptions during this session
-                session[:ctx][:server][:exceptions] += 1
+                session[:context][:server][:exceptions] += 1
                 # save clone of error object to context
-                session[:ctx][:server][:errors].push(e.clone)
+                session[:context][:server][:errors].push(e.clone)
                 # log error info if logging
-                on_logging_event(session[:ctx], Logger::ERROR, "#{e} (#{e.class})".strip, err: e)
+                on_logging_event(session[:context], Logger::ERROR, "#{e} (#{e.class})".strip, err: e)
                 # get the given smtp dialog result
                 output = +"#{e.smtpd_result}"
 
               # Unknown general Exception during processing
               rescue StandardError => e
                 # inc number of detected exceptions during this session
-                session[:ctx][:server][:exceptions] += 1
+                session[:context][:server][:exceptions] += 1
                 # save clone of error object to context
-                session[:ctx][:server][:errors].push(e.clone)
+                session[:context][:server][:errors].push(e.clone)
                 # log error info if logging
-                on_logging_event(session[:ctx], Logger::ERROR, "#{e} (#{e.class})".strip, err: e)
+                on_logging_event(session[:context], Logger::ERROR, "#{e} (#{e.class})".strip, err: e)
                 # set default smtp server dialog error
                 output = +"#{Smtpd500Exception.new.smtpd_result}"
               end
@@ -849,7 +849,7 @@ module SmtpServer
               # check result
               unless output.empty?
                 # log smtp dialog // message data is stored separate
-                on_logging_event(session[:ctx], Logger::DEBUG, +'>>> ' << output)
+                on_logging_event(session[:context], Logger::DEBUG, +'>>> ' << output)
                 # append line feed
                 output << "\r\n"
                 # smtp dialog response
@@ -871,15 +871,15 @@ module SmtpServer
         # connection was simply closed / aborted by remote closing socket
         rescue EOFError => e
           # log info but only while debugging otherwise ignore message
-          on_logging_event(session[:ctx], Logger::DEBUG, 'Connection lost due abort by client! (EOFError)', err: e)
+          on_logging_event(session[:context], Logger::DEBUG, 'Connection lost due abort by client! (EOFError)', err: e)
 
         rescue StandardError => e
           # inc number of detected exceptions during this session
-          session[:ctx][:server][:exceptions] += 1
+          session[:context][:server][:exceptions] += 1
           # save clone of error object to context
-          session[:ctx][:server][:errors].push(e.clone)
+          session[:context][:server][:errors].push(e.clone)
           # log error info if logging
-          on_logging_event(session[:ctx], Logger::ERROR, "#{e} (#{e.class})".strip, err: e)
+          on_logging_event(session[:context], Logger::ERROR, "#{e} (#{e.class})".strip, err: e)
           # power down connection
           # ignore IOErrors when sending final smtp abort return code 421
           begin
@@ -887,13 +887,13 @@ module SmtpServer
             # smtp dialog response
             io.print(output) unless io.closed?
           rescue StandardError => e
-            on_logging_event(session[:ctx], Logger::DEBUG, 'Can\'t send 421 abort code! (IOError)', err: e)
+            on_logging_event(session[:context], Logger::DEBUG, 'Can\'t send 421 abort code! (IOError)', err: e)
           end
         end
 
       ensure
         # event for cleanup at end of communication
-        on_disconnect_event(session[:ctx])
+        on_disconnect_event(session[:context])
       end
 
       # return socket handler, maybe replaced with ssl
@@ -936,9 +936,9 @@ module SmtpServer
             # handle command
             cmd_data = line.gsub(/^(HELO|EHLO)\ /i, '').strip
             # call event to handle data
-            on_helo_event(session[:ctx], cmd_data)
+            on_helo_event(session[:context], cmd_data)
             # if no error raised, append to message hash
-            session[:ctx][:server][:helo] = cmd_data
+            session[:context][:server][:helo] = cmd_data
             # set sequence state as RSET
             session[:cmd_sequence] = :CMD_RSET
             # check whether to answer as HELO or EHLO
@@ -946,7 +946,7 @@ module SmtpServer
               when (/^EHLO/i)
                 # rubocop:disable Style/StringConcatenation
                 # reply supported extensions
-                return "250-#{session[:ctx][:server][:helo_response].to_s.strip}\r\n" +
+                return "250-#{session[:context][:server][:helo_response].to_s.strip}\r\n" +
                        # respond with 8BITMIME extension
                        (@internationalization_extensions ? "250-8BITMIME\r\n" : '') +
                        # respond with SMTPUTF8 extension
@@ -956,12 +956,12 @@ module SmtpServer
                        # respond with AUTH extensions if enabled
                        (@auth_mode == :AUTH_FORBIDDEN ? '' : "250-AUTH LOGIN PLAIN\r\n") +
                        # respond with STARTTLS if available and not already enabled
-                       (@encrypt_mode == :TLS_FORBIDDEN || encrypted?(session[:ctx]) ? '' : "250-STARTTLS\r\n") +
+                       (@encrypt_mode == :TLS_FORBIDDEN || encrypted?(session[:context]) ? '' : "250-STARTTLS\r\n") +
                        '250 OK'
                 # rubocop:enable all
               else
                 # reply ok only
-                return "250 OK #{session[:ctx][:server][:helo_response].to_s.strip}".strip
+                return "250 OK #{session[:context][:server][:helo_response].to_s.strip}".strip
             end
 
           when @proxy_extension && (/^PROXY(\s+)/i)
@@ -985,7 +985,7 @@ module SmtpServer
             # check valid command
             raise Smtpd421Exception, 'Abort connection while illegal PROXY command!' unless line.match?(/^PROXY(\s+)(UNKNOWN(|(\s+).*)|TCP(4|6)(\s+)([0-9a-f.:]+)(\s+)([0-9a-f.:]+)(\s+)([0-9]+)(\s+)([0-9]+)(\s*))$/i)
             # check command usage is allowed only once
-            raise Smtpd421Exception, 'Abort connection while PROXY already set!' if session[:ctx][:server][:proxy]
+            raise Smtpd421Exception, 'Abort connection while PROXY already set!' if session[:context][:server][:proxy]
             # get values from proxy command
             cmd_data = line.gsub(/^PROXY\ /i, '').strip.gsub(/\s+/, ' ').split
             # create an empty hash to inspect by event
@@ -1032,13 +1032,13 @@ module SmtpServer
             end
 
             # call event to handle data
-            return_value = on_proxy_event(session[:ctx], proxy_data)
+            return_value = on_proxy_event(session[:context], proxy_data)
             if return_value
               # overwrite data with returned value
               proxy_data = return_value
             end
             # if no error raised, append to server hash
-            session[:ctx][:server][:proxy] = proxy_data
+            session[:context][:server][:proxy] = proxy_data
 
             # reply nothing
             # otherwise on buffering clients or enabled feature pipelining
@@ -1059,7 +1059,7 @@ module SmtpServer
             # check initialized TlsTransport object
             raise Tls454Exception unless @tls
             # check valid command sequence
-            raise Smtpd503Exception if encrypted?(session[:ctx])
+            raise Smtpd503Exception if encrypted?(session[:context])
             # set sequence for next command input
             session[:cmd_sequence] = :CMD_STARTTLS
             # return with new service ready message
@@ -1081,9 +1081,9 @@ module SmtpServer
             # check valid command sequence
             raise Smtpd503Exception if session[:cmd_sequence] != :CMD_RSET
             # check that encryption is enabled if necessary
-            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(session[:ctx])
+            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(session[:context])
             # check that not already authenticated
-            raise Smtpd503Exception if authenticated?(session[:ctx])
+            raise Smtpd503Exception if authenticated?(session[:context])
             # handle command line
             auth_data = line.gsub(/^AUTH\ /i, '').strip.gsub(/\s+/, ' ').split
             # handle auth command
@@ -1152,7 +1152,7 @@ module SmtpServer
             # check valid command sequence
             raise Smtpd503Exception if session[:cmd_sequence] == :CMD_HELO
             # check that encryption is enabled if necessary
-            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(session[:ctx])
+            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(session[:context])
             # handle command
             process_reset_session(session)
             return '250 OK'
@@ -1177,9 +1177,9 @@ module SmtpServer
             # check valid command sequence
             raise Smtpd503Exception if session[:cmd_sequence] != :CMD_RSET
             # check that encryption is enabled if necessary
-            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(session[:ctx])
+            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(session[:context])
             # check that authentication is enabled if necessary
-            raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(session[:ctx])
+            raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(session[:context])
             # handle command
             cmd_data = line.gsub(/^MAIL FROM:/i, '').strip
             # check for BODY= parameter
@@ -1189,13 +1189,13 @@ module SmtpServer
                 # raise exception if not supported
                 raise Smtpd501Exception unless @internationalization_extensions
                 # save info about encoding
-                session[:ctx][:envelope][:encoding_body] = '7bit'
+                session[:context][:envelope][:encoding_body] = '7bit'
               # test for 8bit
               when (/\sBODY=8BITMIME(\s|$)/i)
                 # raise exception if not supported
                 raise Smtpd501Exception unless @internationalization_extensions
                 # save info about encoding
-                session[:ctx][:envelope][:encoding_body] = '8bitmime'
+                session[:context][:envelope][:encoding_body] = '8bitmime'
               # test for unknown encoding
               when (/\sBODY=.*$/i)
                 # unknown BODY encoding
@@ -1208,18 +1208,18 @@ module SmtpServer
                 # raise exception if not supported
                 raise Smtpd501Exception unless @internationalization_extensions
                 # save info about encoding
-                session[:ctx][:envelope][:encoding_utf8] = 'utf8'
+                session[:context][:envelope][:encoding_utf8] = 'utf8'
             end
             # drop any BODY= and SMTPUTF8 content
             cmd_data = cmd_data.gsub(/\sBODY=(7BIT|8BITMIME)/i, '').gsub(/\sSMTPUTF8/i, '').strip if @internationalization_extensions
             # call event to handle data
-            return_value = on_mail_from_event(session[:ctx], cmd_data)
+            return_value = on_mail_from_event(session[:context], cmd_data)
             if return_value
               # overwrite data with returned value
               cmd_data = return_value
             end
             # if no error raised, append to message hash
-            session[:ctx][:envelope][:from] = cmd_data
+            session[:context][:envelope][:from] = cmd_data
             # set sequence state
             session[:cmd_sequence] = :CMD_MAIL
             # reply ok
@@ -1245,19 +1245,19 @@ module SmtpServer
             # check valid command sequence
             raise Smtpd503Exception unless [:CMD_MAIL, :CMD_RCPT].include?(session[:cmd_sequence])
             # check that encryption is enabled if necessary
-            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(session[:ctx])
+            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(session[:context])
             # check that authentication is enabled if necessary
-            raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(session[:ctx])
+            raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(session[:context])
             # handle command
             cmd_data = line.gsub(/^RCPT TO:/i, '').strip
             # call event to handle data
-            return_value = on_rcpt_to_event(session[:ctx], cmd_data)
+            return_value = on_rcpt_to_event(session[:context], cmd_data)
             if return_value
               # overwrite data with returned value
               cmd_data = return_value
             end
             # if no error raised, append to message hash
-            session[:ctx][:envelope][:to] << cmd_data
+            session[:context][:envelope][:to] << cmd_data
             # set sequence state
             session[:cmd_sequence] = :CMD_RCPT
             # reply ok
@@ -1279,28 +1279,28 @@ module SmtpServer
             # check valid command sequence
             raise Smtpd503Exception if session[:cmd_sequence] != :CMD_RCPT
             # check that encryption is enabled if necessary
-            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(session[:ctx])
+            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(session[:context])
             # check that authentication is enabled if necessary
-            raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(session[:ctx])
+            raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(session[:context])
             # handle command
             # set sequence state
             session[:cmd_sequence] = :CMD_DATA
             # save incoming UTC time
-            session[:ctx][:message][:received] = Time.now.utc
+            session[:context][:message][:received] = Time.now.utc
             # reply ok / proceed with message data
             return '354 Enter message, ending with "." on a line by itself'
 
           else
             # If we somehow get to this point then
             # allow handling of unknown command line
-            on_process_line_unknown_event(session[:ctx], line)
+            on_process_line_unknown_event(session[:context], line)
         end
 
       else
         # If we are in date mode then ...
 
         # call event to signal beginning of message data transfer
-        on_message_data_start_event(session[:ctx]) unless session[:ctx][:message][:data][0]
+        on_message_data_start_event(session[:context]) unless session[:context][:message][:data][0]
 
         # ... and the entire new message data (line) does NOT consists
         # solely of a period (.) on a line by itself then we are being
@@ -1312,22 +1312,22 @@ module SmtpServer
 
           # if received an empty line the first time, that identifies
           # end of headers.
-          unless session[:ctx][:message][:headers][0] || line[0]
+          unless session[:context][:message][:headers][0] || line[0]
             # change flag to do not signal this again for the
             # active message data transmission
-            session[:ctx][:message][:headers] = true.to_s
+            session[:context][:message][:headers] = true.to_s
             # call event to process received headers
-            on_message_data_headers_event(session[:ctx])
+            on_message_data_headers_event(session[:context])
           end
 
           # we need to add the new message data (line) to the message
           # and make sure to add CR LF as defined by RFC
-          session[:ctx][:message][:data] << line << line_break
+          session[:context][:message][:data] << line << line_break
 
           # call event to inspect message data while recording line by line
           # e.g. abort while receiving too big incoming mail or
           # create a teergrube for spammers etc.
-          on_message_data_receiving_event(session[:ctx])
+          on_message_data_receiving_event(session[:context])
 
           # just return and stay on :CMD_DATA
           return ''
@@ -1338,14 +1338,14 @@ module SmtpServer
         # told to finish data mode
 
         # remove last CR LF pair or single LF in buffer
-        session[:ctx][:message][:data].chomp!
+        session[:context][:message][:data].chomp!
         # save delivered UTC time
-        session[:ctx][:message][:delivered] = Time.now.utc
+        session[:context][:message][:delivered] = Time.now.utc
         # save bytesize of message data
-        session[:ctx][:message][:bytesize] = session[:ctx][:message][:data].bytesize
+        session[:context][:message][:bytesize] = session[:context][:message][:data].bytesize
         # call event to process message
         begin
-          on_message_data_event(session[:ctx])
+          on_message_data_event(session[:context])
           return '250 Requested mail action okay, completed'
 
         # test for SmtpdException
@@ -1373,13 +1373,13 @@ module SmtpServer
       session[:cmd_sequence] = connection_initialize ? :CMD_HELO : :CMD_RSET
       # drop any auth challenge
       session[:auth_challenge] = {}
-      # test existing of :ctx hash
-      session[:ctx] || session[:ctx] = {}
+      # test existing of :context hash
+      session[:context] || session[:context] = {}
       # reset server values (only on connection start)
       if connection_initialize
-        # create or rebuild :ctx hash
+        # create or rebuild :context hash
         # and mark strings as mutable
-        session[:ctx].merge!(
+        session[:context].merge!(
           server: {
             local_host: +'',
             local_ip: +'',
@@ -1402,7 +1402,7 @@ module SmtpServer
         )
       end
       # reset envelope values
-      session[:ctx].merge!(
+      session[:context].merge!(
         envelope: {
           from: +'',
           to: [],
@@ -1411,7 +1411,7 @@ module SmtpServer
         }
       )
       # reset message data
-      session[:ctx].merge!(
+      session[:context].merge!(
         message: {
           received: -1,
           delivered: -1,
@@ -1431,15 +1431,15 @@ module SmtpServer
         # check for valid credentials parameters
         raise Smtpd500Exception unless auth_values.length == 3
         # call event function to test credentials
-        return_value = on_auth_event(session[:ctx], auth_values[0], auth_values[1], auth_values[2])
+        return_value = on_auth_event(session[:context], auth_values[0], auth_values[1], auth_values[2])
         if return_value
           # overwrite data with returned value as authorization id
           auth_values[0] = return_value
         end
-        # save authentication information to ctx
-        session[:ctx][:server][:authorization_id] = auth_values[0].to_s.empty? ? auth_values[1] : auth_values[0]
-        session[:ctx][:server][:authentication_id] = auth_values[1]
-        session[:ctx][:server][:authenticated] = Time.now.utc
+        # save authentication information to context
+        session[:context][:server][:authorization_id] = auth_values[0].to_s.empty? ? auth_values[1] : auth_values[0]
+        session[:context][:server][:authentication_id] = auth_values[1]
+        session[:context][:server][:authenticated] = Time.now.utc
         # response code
         return '235 OK'
 
@@ -1468,15 +1468,15 @@ module SmtpServer
           Base64.decode64(encoded_auth_response)
         ]
         # check for valid credentials
-        return_value = on_auth_event(session[:ctx], auth_values[0], auth_values[1], auth_values[2])
+        return_value = on_auth_event(session[:context], auth_values[0], auth_values[1], auth_values[2])
         if return_value
           # overwrite data with returned value as authorization id
           auth_values[0] = return_value
         end
-        # save authentication information to ctx
-        session[:ctx][:server][:authorization_id] = auth_values[0].to_s.empty? ? auth_values[1] : auth_values[0]
-        session[:ctx][:server][:authentication_id] = auth_values[1]
-        session[:ctx][:server][:authenticated] = Time.now.utc
+        # save authentication information to context
+        session[:context][:server][:authorization_id] = auth_values[0].to_s.empty? ? auth_values[1] : auth_values[0]
+        session[:context][:server][:authentication_id] = auth_values[1]
+        session[:context][:server][:authenticated] = Time.now.utc
         # response code
         return '235 OK'
 
