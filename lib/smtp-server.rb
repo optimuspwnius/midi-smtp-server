@@ -21,7 +21,7 @@ module SmtpServer
       @logger.info("SMTP Server starting on port: #{ @port }")
       loop do
         if @connections.size < 4
-          client = @server.accept_nonblock(exception: false)
+          client = @server.accept
           if client
             fiber = Fiber.new { handle_client(client) }
             @connections << fiber
