@@ -19,7 +19,7 @@ module SmtpServer
     def start
       @logger.info("SMTP Server starting on port: #{ @port }")
 
-      Async do |task|
+      Async do | task |
         endpoint = Async::IO::Endpoint.tcp('0.0.0.0', @port)
         @logger.info("Listening on port #{ @port }")
         loop do
@@ -34,7 +34,7 @@ module SmtpServer
     private
 
     def handle_client(client)
-      @logger.info("Client connected: #{client.remote_address.ip_address}")
+      @logger.info("Client connected: #{client}")
       client.write "220 Welcome to the SMTP server\r\n"
       loop do
         request = client.readpartial(1024)
