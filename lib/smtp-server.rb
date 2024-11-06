@@ -21,7 +21,7 @@ module SmtpServer
     public
 
     def start
-      @logger.info("SMTP Server starting on ports: #{ ports.join(', ') }")
+      @logger.info("SMTP Server starting on ports: #{ @ports.join(', ') }")
       loop do
         @servers.each do | server |
           if @connections.size < 4
