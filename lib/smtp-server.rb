@@ -11,8 +11,8 @@ module SmtpServer
   # class for SmtpServer
   class Smtpd
 
-    def initialize(port = 2525)
-      @server = TCPServer.new(port)
+    def initialize(ports = [2525])
+      @servers = ports.map { |port| TCPServer.new(port) }
       @connections = []
       @logger = Logger.new(STDOUT)
     end
@@ -20,18 +20,22 @@ module SmtpServer
     public
 
     def start
-      @logger.info("SMTP Server started on port 2525")
+      @logger.info("SMTP Server started on ports: #{@servers.map(&:addr).map { |addr| addr[1] }.join(', ')}")
       loop do
-        if @connections.size < 4
-          client = @server.accept
-          fiber = Fiber.new { handle_client(client) }
-          @connections << fiber
-          fiber.resume
-        else
-          @connections.each do |fiber|
-            fiber.resume if fiber.alive?
+        @servers.each do |server|
+          if @connections.size < 4
+            client = server.accept_nonblock(exception: false)
+            if client
+              fiber = Fiber.new { handle_client(client) }
+              @connections << fiber
+              fiber.resume
+            end
+          else
+            @connections.each do |fiber|
+              fiber.resume if fiber.alive?
+            end
+            @connections.reject! { |fiber| !fiber.alive? }
           end
-          @connections.reject! { |fiber| !fiber.alive? }
         end
       end
     end
