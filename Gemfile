@@ -1,4 +1,6 @@
 source "https://rubygems.org"
 
-gem 'async', require: 'async/io'
+gem 'async'
+gem 'async-io'
+
 gemspec
