@@ -3,7 +3,7 @@
 require 'logger'
 
 # A small and highly customizable ruby SMTP-Server.
-module MidiSmtpServer
+module SmtpServer
 
   # class for Logging and support of on_logging_event
   class ForwardingLogger

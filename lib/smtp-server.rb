@@ -1,18 +1,16 @@
-# frozen_string_literal: true
-
 require 'logger'
 require 'socket'
 require 'resolv'
 require 'base64'
 
 # A small and highly customizable ruby SMTP-Server.
-module MidiSmtpServer
+module SmtpServer
 
   # import sources
-  require 'midi-smtp-server/version'
-  require 'midi-smtp-server/exceptions'
-  require 'midi-smtp-server/logger'
-  require 'midi-smtp-server/tls-transport'
+  require 'smtp-server/version'
+  require 'smtp-server/exceptions'
+  require 'smtp-server/logger'
+  require 'smtp-server/tls-transport'
 
   # default values
   DEFAULT_SMTPD_HOST = '127.0.0.1'
@@ -22,7 +20,7 @@ module MidiSmtpServer
 
   # default values for conformity to RFC(2)822 and additional
   # if interested in details, checkout discussion on issue queue at:
-  # https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/16
+  # https://github.com/4commerce-technologies-AG/smtp-server/issues/16
   CRLF_MODES = [:CRLF_ENSURE, :CRLF_LEAVE, :CRLF_STRICT].freeze
   DEFAULT_CRLF_MODE = :CRLF_ENSURE
 
@@ -274,7 +272,7 @@ module MidiSmtpServer
       logger_severity: nil
     )
       # create an exposed logger to forward logging to the on_logging_event
-      @logger = MidiSmtpServer::ForwardingLogger.new(method(:on_logging_event))
+      @logger = SmtpServer::ForwardingLogger.new(method(:on_logging_event))
 
       # external logging
       if logger.nil?
@@ -449,7 +447,7 @@ module MidiSmtpServer
     end
 
     # event on LOGGING
-    # the exposed logger property is from class MidiSmtpServer::ForwardingLogger
+    # the exposed logger property is from class SmtpServer::ForwardingLogger
     # and pushes any logging message to this on_logging_event.
     # if logging occurs from inside session, the _ctx should be not nil
     # if logging occurs from an error, the err object should be filled
@@ -1126,7 +1124,7 @@ module MidiSmtpServer
               # not supported in case of also unencrypted data delivery
               # instead of supporting password encryption only, we will
               # provide optional SMTPS service instead
-              # read discussion on https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/3#issuecomment-126898711
+              # read discussion on https://github.com/4commerce-technologies-AG/smtp-server/issues/3#issuecomment-126898711
               #
               # when (/CRAM-MD5/i)
               #   raise Smtpd500Exception

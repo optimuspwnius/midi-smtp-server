@@ -3,7 +3,7 @@
 require 'resolv'
 
 # A small and highly customizable ruby SMTP-Server.
-module MidiSmtpServer
+module SmtpServer
 
   # Encryption modes
   ENCRYPT_MODES = [:TLS_FORBIDDEN, :TLS_OPTIONAL, :TLS_REQUIRED].freeze
