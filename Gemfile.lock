@@ -1,0 +1,18 @@
+PATH
+  remote: .
+  specs:
+    smtp-server (4.0.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+
+PLATFORMS
+  ruby
+  x86_64-linux
+
+DEPENDENCIES
+  smtp-server!
+
+BUNDLED WITH
+   2.5.16
