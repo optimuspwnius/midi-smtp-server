@@ -58,13 +58,12 @@ module SmtpServer
     end
 
     def start
-      @ports.each do |port|
+      @logger.info("SMTP Servers started on ports: #{ @ports.join(', ') }")
+      @ports.each do | port |
         server = Server.new(port: port)
         @servers << server
         Thread.new { server.start }
       end
-
-      @logger.info("SMTP Servers started on ports: #{ @ports.join(', ') }")
 
       loop do
         @servers.each do |server|
