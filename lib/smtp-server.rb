@@ -26,6 +26,12 @@ module SmtpServer
         Thread.new { server.start }
       end
 
+      Signal.trap("INT") do
+        @logger.info("Interrupt received, shutting down servers...")
+        stop
+        exit
+      end
+
       loop do
         @servers.each do |server|
           unless server_running?(server)
@@ -34,6 +40,10 @@ module SmtpServer
         end
         sleep 5
       end
+    end
+
+    def stop
+      @servers.each(&:stop)
     end
 
     private
@@ -61,7 +71,7 @@ module SmtpServer
 
       @logger.info("Listening on port #{ @port }")
 
-      Async do | task |
+      @task = Async do | task |
         @semaphore.async do
           @endpoint.accept do | client |
             handle_client(client)
@@ -69,6 +79,12 @@ module SmtpServer
         end
 
       end
+    end
+
+    def stop
+      @logger.info("Stopping server on port: #{ @port }")
+      @task.stop if @task
+      @sessions.each(&:close)
     end
 
     private
