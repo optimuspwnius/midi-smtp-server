@@ -31,15 +31,10 @@ module SmtpServer
         @shutdown = true
       end
 
-      loop do
-        break if @shutdown
-
-        @servers.each do |server|
-          unless server_running?(server)
-            @logger.error("Server on port #{server.instance_variable_get(:@port)} has stopped.")
-          end
+      Async do |task|
+        task.async do
+          monitor_servers(task)
         end
-        sleep 5
       end
 
       @logger.info("Interrupt received, shutting down servers...")
@@ -51,6 +46,19 @@ module SmtpServer
     end
 
     private
+
+    def monitor_servers(task)
+      loop do
+        break if @shutdown
+
+        @servers.each do |server|
+          unless server_running?(server)
+            @logger.error("Server on port #{server.instance_variable_get(:@port)} has stopped.")
+          end
+        end
+        task.sleep 5
+      end
+    end
 
     def server_running?(server)
       # This method should be updated to check the status of the async server
