@@ -86,7 +86,7 @@ module SmtpServer
         break if data.nil?
 
         session.update_buffer(data)
-        # @logger.info("Received data: #{ data.chomp }")
+        @logger.info("Received data: #{ data.chomp }")
 
         # Check for QUIT command
         if buffer.include?("QUIT\r\n")
@@ -99,7 +99,7 @@ module SmtpServer
         if buffer.include?("\r\n.\r\n")
           @logger.info("End of message received")
           client.write "250 OK\r\n"
-          session.buffer.clear
+          session.clear_buffer
         end
       end
 
