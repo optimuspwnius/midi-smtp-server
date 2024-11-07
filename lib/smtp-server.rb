@@ -48,10 +48,10 @@ module SmtpServer
   class Server
 
     def initialize(port: 2525)
-      @port = port
-      @logger = Logger.new(STDOUT)
+      @port      = port
+      @logger    = Logger.new(STDOUT)
       @semaphore = Async::Semaphore.new(4) # Limit to 4 concurrent connections
-      @sessions = {}
+      @sessions  = [ ]
     end
 
     def start
@@ -75,8 +75,7 @@ module SmtpServer
 
     def handle_client(client)
       session = Session.new(client)
-      client_id = client.object_id
-      @sessions[client_id] = session
+      @sessions.push session
 
       @logger.info("Client connected: #{client}")
       client.write "220 Welcome to the SMTP server\r\n"
@@ -86,8 +85,8 @@ module SmtpServer
 
         break if data.nil?
 
-        buffer << data
-        @logger.info("Received data: #{data.chomp}")
+        session.update_buffer(data)
+        # @logger.info("Received data: #{ data.chomp }")
 
         # Check for QUIT command
         if buffer.include?("QUIT\r\n")
@@ -100,12 +99,13 @@ module SmtpServer
         if buffer.include?("\r\n.\r\n")
           @logger.info("End of message received")
           client.write "250 OK\r\n"
-          buffer.clear
+          session.buffer.clear
         end
       end
+
       client.close
       @logger.info("Client disconnected")
-      @sessions.delete(client_id)
+      @sessions.delete(session)
     end
 
   end
@@ -127,10 +127,6 @@ module SmtpServer
 
     def clear_buffer
       @buffer.clear
-    end
-
-    def close
-      @client.close
     end
   end
 
