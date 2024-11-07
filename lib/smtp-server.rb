@@ -26,11 +26,13 @@ module SmtpServer
       @logger.info("Listening on port #{ @port }")
 
       Async do | task |
-        @endpoint.accept do | client |
-          @semaphore.async do
+        @semaphore.async do
+          @endpoint.accept do | client |
+
             handle_client(client)
           end
         end
+
       end
     end
 
