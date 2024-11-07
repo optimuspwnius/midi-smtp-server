@@ -14,6 +14,7 @@ module SmtpServer
     def initialize(port: 2525)
       @port = port
       @logger = Logger.new(STDOUT)
+      @semaphore = Async::Semaphore.new(4) # Limit to 4 concurrent connections
     end
 
     def start
@@ -25,7 +26,9 @@ module SmtpServer
 
       Async do | task |
         @endpoint.accept do | client |
-          handle_client(client)
+          @semaphore.async do
+            handle_client(client)
+          end
         end
       end
     end
@@ -77,7 +80,7 @@ module SmtpServer
       @ports.each do | port |
         server = Server.new(port: port)
         @servers << server
-        server.start
+        Thread.new { server.start }
       end
 
       loop do
