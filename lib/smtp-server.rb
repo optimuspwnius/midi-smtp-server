@@ -73,6 +73,10 @@ module SmtpServer
     private
 
     def handle_client(client)
+      session = Session.new(client)
+      client_id = client.object_id
+      @sessions[client_id] = session
+
       @logger.info("Client connected: #{client}")
       client.write "220 Welcome to the SMTP server\r\n"
       buffer = ""
@@ -100,6 +104,7 @@ module SmtpServer
       end
       client.close
       @logger.info("Client disconnected")
+      @sessions.delete(client_id)
     end
 
   end
