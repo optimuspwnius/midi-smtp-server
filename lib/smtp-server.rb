@@ -79,7 +79,7 @@ module SmtpServer
 
       @logger.info("Client connected: #{client}")
       client.write "220 Welcome to the SMTP server\r\n"
-      buffer = ""
+
       loop do
         data = client.readpartial(1024)
 
@@ -89,14 +89,14 @@ module SmtpServer
         @logger.info("Received data: #{ data.chomp }")
 
         # Check for QUIT command
-        if buffer.include?("QUIT\r\n")
+        if session.buffer.include?("QUIT\r\n")
           @logger.info("QUIT command received")
           client.write "221 Bye\r\n"
           break
         end
 
         # Check for end-of-message indicators
-        if buffer.include?("\r\n.\r\n")
+        if session.buffer.include?("\r\n.\r\n")
           @logger.info("End of message received")
           client.write "250 OK\r\n"
           session.clear_buffer
