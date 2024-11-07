@@ -23,7 +23,7 @@ module SmtpServer
 
       @servers = @ports.map { | port | Server.new(port: port) }
 
-      @servers.&each(&:start)
+      @servers.each(&:start)
 
       #@ports.each do | port |
       #  server = Server.new(port: port)
