@@ -7,7 +7,7 @@ require 'async/semaphore'
 require 'async/io'
 require 'net/smtp'
 require_relative 'smtp-server/server'
-require_relative 'smtp-server/client'
+require_relative 'smtp-server/session'
 
 module SmtpServer
   class << self
