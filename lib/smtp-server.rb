@@ -144,6 +144,10 @@ module SmtpServer
     def clear_buffer
       @buffer.clear
     end
+
+    def close
+      @client.close
+    end
   end
 
 end
