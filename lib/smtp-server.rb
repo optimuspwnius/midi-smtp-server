@@ -13,9 +13,10 @@ module SmtpServer
   class Daemon
 
     def initialize(ports: [2525])
-      @ports = ports
-      @servers = []
-      @logger = Logger.new(STDOUT)
+      @shutdown = false
+      @servers  = []
+      @logger   = Logger.new(STDOUT)
+      @ports    = ports
     end
 
     def start
@@ -27,12 +28,12 @@ module SmtpServer
       end
 
       Signal.trap("INT") do
-        @logger.info("Interrupt received, shutting down servers...")
-        stop
-        exit
+        @shutdown = true
       end
 
       loop do
+        break if @shutdown
+
         @servers.each do |server|
           unless server_running?(server)
             @logger.error("Server on port #{server.instance_variable_get(:@port)} has stopped.")
@@ -40,6 +41,9 @@ module SmtpServer
         end
         sleep 5
       end
+
+      @logger.info("Interrupt received, shutting down servers...")
+      stop
     end
 
     def stop
