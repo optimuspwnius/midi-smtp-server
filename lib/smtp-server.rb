@@ -51,6 +51,7 @@ module SmtpServer
       @port = port
       @logger = Logger.new(STDOUT)
       @semaphore = Async::Semaphore.new(4) # Limit to 4 concurrent connections
+      @sessions = {}
     end
 
     def start
