@@ -30,6 +30,8 @@ module SmtpServer
           @shutdown = true
           task.stop
         end
+
+        @logger.info("SMTP Servers started.")
       end
 
       #@ports.each do | port |
@@ -37,8 +39,6 @@ module SmtpServer
       #  @servers.push server
       #  Thread.new { server.start }
       #end
-
-      @logger.info("SMTP Servers started.")
 
       until @shutdown
         sleep 1
