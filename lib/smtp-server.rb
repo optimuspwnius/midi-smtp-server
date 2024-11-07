@@ -23,7 +23,9 @@ module SmtpServer
 
       @servers = @ports.map { | port | Server.new(port: port) }
 
-      @servers.each(&:start)
+      Async do | task |
+        @servers.each(&:start)
+      end
 
       #@ports.each do | port |
       #  server = Server.new(port: port)
