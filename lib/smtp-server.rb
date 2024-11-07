@@ -7,7 +7,6 @@ require 'async/semaphore'
 require 'async/io'
 require 'net/smtp'
 
-# A small and highly customizable ruby SMTP-Server.
 module SmtpServer
 
   class Daemon
@@ -21,17 +20,26 @@ module SmtpServer
 
     def start
       @logger.info("SMTP Servers starting on ports: #{ @ports.join(', ') }")
-      @ports.each do | port |
-        server = Server.new(port: port)
-        @servers << server
-        Thread.new { server.start }
-      end
+
+      @servers = @ports.map { | port | Server.new(port: port) }
+
+      @servers.&each(&:start)
+
+      #@ports.each do | port |
+      #  server = Server.new(port: port)
+      #  @servers.push server
+      #  Thread.new { server.start }
+      #end
 
       Signal.trap("INT") do
         @shutdown = true
       end
 
-      monitor_servers
+      until @shutdown
+        sleep 1
+      end
+
+      @logger.info("Interrupt received, shutting down servers...")
 
       stop
 
@@ -40,16 +48,6 @@ module SmtpServer
 
     def stop
       @servers.each(&:stop)
-    end
-
-    private
-
-    def monitor_servers
-      until @shutdown
-        sleep 1
-      end
-
-      @logger.info("Interrupt received, shutting down servers...")
     end
 
   end
@@ -78,10 +76,6 @@ module SmtpServer
         end
 
       end
-    end
-
-    def running?
-      @running
     end
 
     def stop
