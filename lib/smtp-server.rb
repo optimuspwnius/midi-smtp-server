@@ -24,7 +24,12 @@ module SmtpServer
       @servers = @ports.map { | port | Server.new(port: port) }
 
       Async do | task |
-        @servers.each(&:start)
+        @servers.each { |server| task.async { server.start } }
+
+        Signal.trap("INT") do
+          @shutdown = true
+          task.stop
+        end
       end
 
       #@ports.each do | port |
@@ -33,9 +38,7 @@ module SmtpServer
       #  Thread.new { server.start }
       #end
 
-      Signal.trap("INT") do
-        @shutdown = true
-      end
+      @logger.info("SMTP Servers started.")
 
       until @shutdown
         sleep 1
