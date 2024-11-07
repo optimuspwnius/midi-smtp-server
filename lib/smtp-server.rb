@@ -10,6 +10,41 @@ require 'net/smtp'
 # A small and highly customizable ruby SMTP-Server.
 module SmtpServer
 
+  class Daemon
+
+    def initialize(ports: [2525])
+      @ports = ports
+      @servers = []
+      @logger = Logger.new(STDOUT)
+    end
+
+    def start
+      @logger.info("SMTP Servers starting on ports: #{ @ports.join(', ') }")
+      @ports.each do | port |
+        server = Server.new(port: port)
+        @servers << server
+        Thread.new { server.start }
+      end
+
+      loop do
+        @servers.each do |server|
+          unless server_running?(server)
+            @logger.error("Server on port #{server.instance_variable_get(:@port)} has stopped.")
+          end
+        end
+        sleep 5
+      end
+    end
+
+    private
+
+    def server_running?(server)
+      # This method should be updated to check the status of the async server
+      true
+    end
+
+  end
+
   class Server
 
     def initialize(port: 2525)
@@ -28,7 +63,6 @@ module SmtpServer
       Async do | task |
         @semaphore.async do
           @endpoint.accept do | client |
-
             handle_client(client)
           end
         end
@@ -70,39 +104,28 @@ module SmtpServer
 
   end
 
-  class Smtpd
+  class Session
+    attr_reader :client, :buffer, :connected_at, :last_data_received_at
 
-    def initialize(ports: [2525])
-      @ports = ports
-      @servers = []
-      @logger = Logger.new(STDOUT)
+    def initialize(client)
+      @client = client
+      @buffer = ""
+      @connected_at = Time.now
+      @last_data_received_at = Time.now
     end
 
-    def start
-      @logger.info("SMTP Servers starting on ports: #{ @ports.join(', ') }")
-      @ports.each do | port |
-        server = Server.new(port: port)
-        @servers << server
-        Thread.new { server.start }
-      end
-
-      loop do
-        @servers.each do |server|
-          unless server_running?(server)
-            @logger.error("Server on port #{server.instance_variable_get(:@port)} has stopped.")
-          end
-        end
-        sleep 5
-      end
+    def update_buffer(data)
+      @buffer << data
+      @last_data_received_at = Time.now
     end
 
-    private
-
-    def server_running?(server)
-      # This method should be updated to check the status of the async server
-      true
+    def clear_buffer
+      @buffer.clear
     end
 
+    def close
+      @client.close
+    end
   end
 
 end
