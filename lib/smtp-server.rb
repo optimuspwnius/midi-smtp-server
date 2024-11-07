@@ -44,6 +44,7 @@ module SmtpServer
         sleep 1
       end
 
+      @logger.info("")
       @logger.info("Interrupt received, shutting down servers...")
 
       stop
@@ -67,7 +68,7 @@ module SmtpServer
     end
 
     def start
-      @logger.info("SMTP Server starting on port: #{ @port }")
+      @logger.info("Server starting on port #{ @port }")
 
       @endpoint = Async::IO::Endpoint.tcp('127.0.0.1', @port)
 
@@ -84,7 +85,7 @@ module SmtpServer
     end
 
     def stop
-      @logger.info("Stopping server on port: #{ @port }")
+      @logger.info("Stopping server on port #{ @port }")
       @task.stop if @task
       @sessions.each(&:close)
     end
