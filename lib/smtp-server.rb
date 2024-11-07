@@ -44,7 +44,7 @@ module SmtpServer
 
     private
 
-    def monitor_servers(task)
+    def monitor_servers
       until @shutdown
         sleep 1
       end
