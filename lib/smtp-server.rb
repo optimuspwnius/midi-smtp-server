@@ -3,6 +3,7 @@ require 'socket'
 require 'resolv'
 require 'base64'
 require 'async'
+require 'async/semaphore'
 require 'async/io'
 require 'net/smtp'
 
